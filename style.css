@@ -1,47 +1,72 @@
-/* General */
+/* General page style */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 20px;
-  background-color: #f5f8fa;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f6f8;
   color: #1b2a3b;
 }
 
-/* Headings */
-h2, h3 {
-  color: #0d6efd; /* Blue */
+/* Header */
+h2 {
+  color: #0d1b2a;
+  margin-bottom: 20px;
+}
+
+/* Input fields */
+input[type="file"], button {
+  font-size: 16px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  margin-top: 10px;
+}
+
+input[type="file"] {
+  width: 100%;
 }
 
 /* Buttons */
 button {
-  margin-top: 10px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
   transition: 0.2s;
 }
 
-#cameraBtn { background-color: #198754; color: white; }  /* Green */
-#sendBtn { background-color: #0d6efd; color: white; }    /* Blue */
-#backBtn { background-color: #6c757d; color: white; }    /* Grey */
+#cameraBtn { background-color: #198754; color: white; border: none; }
+#sendBtn { background-color: #0d6efd; color: white; border: none; }
+#backBtn { background-color: #6c757d; color: white; border: none; }
 
-/* Preview image and video */
+/* Video and preview */
 #preview, #camera {
-  max-width: 300px;
-  display: block;
+  max-width: 100%;
+  border-radius: 10px;
   margin-top: 10px;
-  border-radius: 8px;
   border: 1px solid #cbd5e1;
 }
 
-/* JSON result */
+/* JSON response container */
 pre {
-  background: #ffffff;
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow-x: auto;
+  margin-top: 20px;
 }
+
+/* Layout */
+.container {
+  max-width: 500px;
+  margin: 50px auto;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
 
 
