@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>KTP OCR</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>KTP OCR</h1>
+
+  <!-- Step 1: Upload -->
+  <div id="uploadSection">
+    <h2>Step 1: Upload or Take Picture</h2>
+    <input type="file" id="fileInput" accept="image/*"><br><br>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment"><br><br>
+    <button id="previewBtn">Preview</button>
+  </div>
+
+  <!-- Step 2: Preview -->
+  <div id="previewSection" style="display:none;">
+    <h2>Step 2: Preview</h2>
+    <img id="previewImage" style="max-width:300px; border:1px solid #ccc;"><br><br>
+    <button id="processBtn">Process OCR</button>
+    <button id="backToUpload">Back</button>
+  </div>
+
+  <!-- Step 3: Result -->
+  <div id="resultSection" style="display:none;">
+    <h2>OCR Result</h2>
+    <pre id="result"></pre>
+    <button id="backToUploadFromResult">Back</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
