@@ -11,7 +11,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // Get access token from VIDA
+    // Get access token
     const tokenRes = await fetch("https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -75,6 +75,7 @@ exports.handler = async (event) => {
     };
   }
 };
+
 
 
 
