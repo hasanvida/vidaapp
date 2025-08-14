@@ -1,59 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <title>KTP OCR</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./style.css" />
+  <meta charset="UTF-8">
+  <title>VIDA OCR & Verification</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #preview { max-width: 300px; display: block; margin-top: 10px; }
+    button { margin-top: 10px; padding: 8px 15px; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>KTP OCR Demo</h1>
-  </header>
+  <h2>VIDA OCR & Verification Test</h2>
 
-  <!-- Upload / Camera -->
-  <section id="uploadSection" class="card">
-    <h2>Choose an option</h2>
-    <div class="row">
-      <button id="btnFile" class="btn">Upload from File</button>
-      <button id="btnCamera" class="btn btn-dark">Take Photo with Camera</button>
-      <input id="fileInput" class="hidden" type="file" accept="image/*" />
-    </div>
+  <input type="file" id="fileInput" accept="image/*"><br>
+  <button id="cameraBtn">Take Photo</button>
+  <video id="camera" autoplay style="display:none; width:300px;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview" src="" alt="Preview">
 
-    <div id="cameraWrap" class="hidden">
-      <video id="video" autoplay playsinline></video>
-      <div class="row">
-        <button id="btnCapture" class="btn">Capture</button>
-        <button id="btnStopCam" class="btn btn-ghost">Stop Camera</button>
-      </div>
-    </div>
+  <br>
+  <button id="sendBtn">Send to VIDA</button>
 
-    <div id="previewWrap" class="hidden">
-      <h3>Preview</h3>
-      <img id="previewImg" alt="KTP preview" />
-      <div class="row">
-        <button id="btnProcess" class="btn btn-accent">Process OCR</button>
-        <button id="btnBack1" class="btn btn-ghost">Back</button>
-      </div>
-    </div>
-  </section>
+  <h3>API Response:</h3>
+  <pre id="resultContainer"></pre>
 
-  <!-- Results -->
-  <section id="resultSection" class="card hidden">
-    <h2>OCR Result</h2>
-    <table class="result-table">
-      <thead><tr><th>Field</th><th>Value</th></tr></thead>
-      <tbody id="resultBody"></tbody>
-    </table>
-    <div class="row">
-      <button id="btnBack2" class="btn btn-ghost">Back to Start</button>
-    </div>
-  </section>
+  <script>
+    let imageBase64 = "";
 
-  <footer>
-    <small>VIDA OCR • demo</small>
-  </footer>
+    const fileInput = document.getElementById("fileInput");
+    const preview = document.getElementById("preview");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const camera = document.getElementById("camera");
+    const canvas = document.getElementById("canvas");
+    const sendBtn = document.getElementById("sendBtn");
+    const resultContainer = document.getElementById("resultContainer");
 
-  <script src="./script.js"></script>
+    // Handle file upload
+    fileInput.addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          imageBase64 = evt.target.result.split(",")[1];
+          preview.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Handle camera
+    cameraBtn.addEventListener("click", async function() {
+      if (camera.style.display === "none") {
+        camera.style.display = "block";
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        camera.srcObject = stream;
+        cameraBtn.textContent = "Capture Photo";
+      } else {
+        const ctx = canvas.getContext("2d");
+        canvas.width = camera.videoWidth;
+        canvas.height = camera.videoHeight;
+        ctx.drawImage(camera, 0, 0);
+        imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
+        preview.src = canvas.toDataURL("image/jpeg");
+
+        // Stop camera
+        camera.srcObject.getTracks().forEach(track => track.stop());
+        camera.style.display = "none";
+        cameraBtn.textContent = "Take Photo";
+      }
+    });
+
+    // Send to Netlify function
+    sendBtn.addEventListener("click", function() {
+      if (!imageBase64) {
+        alert("Please upload or capture a KTP image first.");
+        return;
+      }
+
+      fetch("/.netlify/functions/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ktp_image: imageBase64 })
+      })
+      .then(res => res.json())
+      .then(data => {
+        // Display the raw JSON response
+        resultContainer.textContent = JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        resultContainer.textContent = "Error: " + err;
+      });
+    });
+  </script>
 </body>
 </html>
+
