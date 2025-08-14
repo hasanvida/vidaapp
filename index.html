@@ -115,6 +115,7 @@ fileInput.addEventListener('change', async () => {
   const file = fileInput.files[0];
   if (!file) {
     preview.style.display = 'none';
+    apiResult.textContent = '{ Result will appear here }';
     return;
   }
 
@@ -135,15 +136,30 @@ fileInput.addEventListener('change', async () => {
       method: 'POST',
       body: formData
     });
-    const data = await res.json();
+
+    if (!res.ok) {
+      apiResult.textContent = `HTTP Error: ${res.status} ${res.statusText}`;
+      return;
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (jsonErr) {
+      apiResult.textContent = 'Response is not valid JSON:\n' + await res.text();
+      return;
+    }
+
     apiResult.textContent = JSON.stringify(data, null, 2);
+
   } catch (err) {
-    apiResult.textContent = 'Error: ' + err.message;
+    apiResult.textContent = 'Failed to fetch. Make sure your backend is running at http://localhost:3001\nError: ' + err.message;
   }
 });
 </script>
 </body>
 </html>
+
 
 
 
