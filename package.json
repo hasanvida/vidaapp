@@ -1,8 +1,13 @@
 {
-  "name": "ktp-ocr-netlify",
+  "name": "vida-ocr",
   "version": "1.0.0",
-  "private": true,
+  "description": "VIDA OCR & ID Verification Netlify Project",
+  "main": "netlify/functions/ocr.js",
   "dependencies": {
-    "node-fetch": "^2.6.9"
+    "node-fetch": "^2.6.7"
+  },
+  "scripts": {
+    "start": "netlify dev"
   }
 }
+
