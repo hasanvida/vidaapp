@@ -6,23 +6,26 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>VIDA OCR & Verification</h2>
+  <div class="container">
+    <h2>VIDA OCR & Verification</h2>
 
-  <input type="file" id="fileInput" accept="image/*"><br>
-  <button id="cameraBtn">Take Photo</button>
-  <button id="backBtn">Back</button>
+    <input type="file" id="fileInput" accept="image/*"><br>
+    <button id="cameraBtn">Take Photo</button>
+    <button id="backBtn">Back</button>
 
-  <video id="camera" autoplay style="display:none; width:300px;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview" src="" alt="Preview">
+    <video id="camera" autoplay style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview" src="" alt="Preview">
 
-  <br>
-  <button id="sendBtn">Send to VIDA</button>
+    <br>
+    <button id="sendBtn">Send to VIDA</button>
 
-  <h3>API Response:</h3>
-  <pre id="resultContainer"></pre>
+    <h3>API Response:</h3>
+    <pre id="resultContainer"></pre>
+  </div>
 
   <script src="script.js"></script>
 </body>
 </html>
+
 
