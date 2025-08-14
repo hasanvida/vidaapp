@@ -1,28 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KTP OCR</title>
-  <link rel="stylesheet" href="style.css">
+  <title>KTP OCR App</title>
+  <style>
+    body { font-family: Arial; background: #f8f9fa; padding: 20px; }
+    button { padding: 10px 15px; margin: 5px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; table-layout: fixed; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; word-wrap: break-word; }
+    #preview { max-width: 300px; margin-top: 10px; }
+    video { width: 300px; height: 200px; background: black; }
+  </style>
 </head>
 <body>
-  <div id="upload-page">
-    <h1>KTP OCR Upload</h1>
-    <input type="file" id="fileInput" accept="image/*" capture="environment">
-    <div id="preview-container">
-      <img id="preview" alt="KTP Preview" />
-    </div>
-    <button id="uploadBtn" disabled>Run OCR</button>
+  <h1>KTP OCR Demo</h1>
+
+  <button onclick="showFileUpload()">📁 Upload from File</button>
+  <button onclick="showCamera()">📷 Take Photo with Camera</button>
+
+  <div id="fileSection" style="display:none;">
+    <input type="file" accept="image/*" onchange="previewFile(event)">
+    <img id="preview" alt="">
+    <br><button onclick="sendImage()">Submit</button>
   </div>
 
-  <div id="result-page" style="display:none;">
-    <h1>OCR Result</h1>
-    <pre id="ocrResult"></pre>
-    <button id="backBtn">Back</button>
+  <div id="cameraSection" style="display:none;">
+    <video id="video" autoplay></video><br>
+    <button onclick="capture()">Capture</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="capturedImage" alt="">
+    <br><button onclick="sendCaptured()">Submit</button>
   </div>
 
-  <script src="script.js"></script>
+  <div id="result"></div>
+
+<script>
+let imageBase64 = "";
+
+function showFileUpload() {
+  document.getElementById("fileSection").style.display = "block";
+  document.getElementById("cameraSection").style.display = "none";
+}
+
+function showCamera() {
+  document.getElementById("cameraSection").style.display = "block";
+  document.getElementById("fileSection").style.display = "none";
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => { document.getElementById("video").srcObject = stream; });
+}
+
+function previewFile(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById("preview").src = e.target.result;
+    imageBase64 = e.target.result.split(",")[1];
+  }
+  reader.readAsDataURL(file);
+}
+
+function capture() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL("image/jpeg");
+  document.getElementById("capturedImage").src = dataUrl;
+  imageBase64 = dataUrl.split(",")[1];
+}
+
+async function sendImage() {
+  if (!imageBase64) return alert("Please select an image first!");
+  await sendToServer();
+}
+
+async function sendCaptured() {
+  if (!imageBase64) return alert("Please capture an image first!");
+  await sendToServer();
+}
+
+async function sendToServer() {
+  document.getElementById("result").innerHTML = "Processing...";
+  const res = await fetch("/.netlify/functions/ocr", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: imageBase64 })
+  });
+  const data = await res.json();
+  showTable(data);
+}
+
+function showTable(data) {
+  if (!data || typeof data !== "object") {
+    document.getElementById("result").innerHTML = "No result.";
+    return;
+  }
+  let html = "<table><tr><th>Field</th><th>Value</th></tr>";
+  for (let key in data) {
+    html += `<tr><td>${key}</td><td>${JSON.stringify(data[key])}</td></tr>`;
+  }
+  html += "</table>";
+  document.getElementById("result").innerHTML = html;
+}
+</script>
 </body>
 </html>
+
 
