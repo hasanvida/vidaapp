@@ -1,7 +1,8 @@
 {
   "name": "ktp-ocr-netlify",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.9"
   }
 }
