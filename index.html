@@ -1,68 +1,33 @@
-let imageBase64 = "";
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>VIDA OCR & Verification</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #preview { max-width: 300px; display: block; margin-top: 10px; }
+    button { margin-top: 10px; padding: 8px 15px; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h2>VIDA OCR & Verification Test</h2>
 
-const fileInput = document.getElementById("fileInput");
-const preview = document.getElementById("preview");
-const cameraBtn = document.getElementById("cameraBtn");
-const camera = document.getElementById("camera");
-const canvas = document.getElementById("canvas");
-const sendBtn = document.getElementById("sendBtn");
-const resultContainer = document.getElementById("resultContainer");
+  <input type="file" id="fileInput" accept="image/*"><br>
+  <button id="cameraBtn">Take Photo</button>
+  <video id="camera" autoplay style="display:none; width:300px;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview" src="" alt="Preview">
 
-// Handle file upload
-fileInput.addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      imageBase64 = evt.target.result.split(",")[1];
-      preview.src = evt.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-});
+  <br>
+  <button id="sendBtn">Send to VIDA</button>
 
-// Handle camera capture
-cameraBtn.addEventListener("click", async function() {
-  if (camera.style.display === "none") {
-    camera.style.display = "block";
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    camera.srcObject = stream;
-    cameraBtn.textContent = "Capture Photo";
-  } else {
-    const ctx = canvas.getContext("2d");
-    canvas.width = camera.videoWidth;
-    canvas.height = camera.videoHeight;
-    ctx.drawImage(camera, 0, 0);
-    imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
-    preview.src = canvas.toDataURL("image/jpeg");
+  <h3>API Response:</h3>
+  <pre id="resultContainer"></pre>
 
-    // Stop camera
-    camera.srcObject.getTracks().forEach(track => track.stop());
-    camera.style.display = "none";
-    cameraBtn.textContent = "Take Photo";
-  }
-});
+  <script src="script.js"></script>
+</body>
+</html>
 
-// Send image to Netlify function
-sendBtn.addEventListener("click", function() {
-  if (!imageBase64) {
-    alert("Please upload or capture a KTP image first.");
-    return;
-  }
-
-  fetch("/.netlify/functions/ocr", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ktp_image: imageBase64 })
-  })
-  .then(res => res.json())
-  .then(data => {
-    // Display full raw JSON response
-    resultContainer.textContent = JSON.stringify(data, null, 2);
-  })
-  .catch(err => {
-    resultContainer.textContent = "Error: " + err;
-  });
-});
 
 
