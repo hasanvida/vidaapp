@@ -7,6 +7,9 @@ const camera = document.getElementById("camera");
 const canvas = document.getElementById("canvas");
 const sendBtn = document.getElementById("sendBtn");
 const resultContainer = document.getElementById("resultContainer");
+const backBtn = document.getElementById("backBtn");
+
+let stream;
 
 // Handle file upload
 fileInput.addEventListener("change", function(e) {
@@ -24,8 +27,11 @@ fileInput.addEventListener("change", function(e) {
 // Handle camera capture
 cameraBtn.addEventListener("click", async function() {
   if (camera.style.display === "none") {
+    // Use back camera by default
     camera.style.display = "block";
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: "environment" } } // back camera
+    });
     camera.srcObject = stream;
     cameraBtn.textContent = "Capture Photo";
   } else {
@@ -37,7 +43,7 @@ cameraBtn.addEventListener("click", async function() {
     preview.src = canvas.toDataURL("image/jpeg");
 
     // Stop camera
-    camera.srcObject.getTracks().forEach(track => track.stop());
+    stream.getTracks().forEach(track => track.stop());
     camera.style.display = "none";
     cameraBtn.textContent = "Take Photo";
   }
@@ -63,5 +69,11 @@ sendBtn.addEventListener("click", function() {
     resultContainer.textContent = "Error: " + err;
   });
 });
+
+// Back button reloads the page
+backBtn.addEventListener("click", function() {
+  location.reload();
+});
+
 
 
