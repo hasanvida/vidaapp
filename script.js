@@ -57,11 +57,11 @@ sendBtn.addEventListener("click", function() {
   })
   .then(res => res.json())
   .then(data => {
-    // Display full raw JSON response
     resultContainer.textContent = JSON.stringify(data, null, 2);
   })
   .catch(err => {
     resultContainer.textContent = "Error: " + err;
   });
 });
+
 
