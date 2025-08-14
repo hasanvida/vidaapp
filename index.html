@@ -76,52 +76,56 @@
 </style>
 </head>
 <body>
-  <header>Upload Document & View API Result</header>
-  <div class="container">
-    <div class="left">
-      <input type="file" id="fileInput" accept="image/*">
-      <img id="preview" class="preview" src="" alt="Image preview" style="display:none;">
-      <button class="upload-btn" id="uploadBtn">Upload & Send</button>
-    </div>
-    <div class="right">
-      <h3>API Response:</h3>
-      <pre id="apiResult" class="result-box">{ Result will appear here }</pre>
-    </div>
+<header>Upload Document & View API Result</header>
+<div class="container">
+  <div class="left">
+    <input type="file" id="fileInput" accept="image/*">
+    <img id="preview" class="preview" src="" alt="Image preview" style="display:none;">
+    <button class="upload-btn" id="uploadBtn">Upload & Send</button>
   </div>
+  <div class="right">
+    <h3>API Response:</h3>
+    <pre id="apiResult" class="result-box">{ Result will appear here }</pre>
+  </div>
+</div>
 
 <script>
 const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
 const uploadBtn = document.getElementById('uploadBtn');
 const apiResult = document.getElementById('apiResult');
+let imageBase64 = "";
 
+// Show image preview and store base64
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  } else {
-    preview.src = '';
+  if (!file) {
     preview.style.display = 'none';
+    imageBase64 = "";
+    return;
   }
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    imageBase64 = e.target.result.split(',')[1]; // remove "data:image/..."
+  };
+  reader.readAsDataURL(file);
 });
 
+// Upload button sends image to Netlify function
 uploadBtn.addEventListener('click', async () => {
-  const file = fileInput.files[0];
-  if (!file) return alert('Please select a file first.');
-
-  const formData = new FormData();
-  formData.append('file', file);
+  if (!imageBase64) return alert('Please select a file first.');
 
   try {
-    const res = await fetch('http://localhost:3001/api/ktp-ocr', {
+    const res = await fetch('/.netlify/functions/ocr', {
       method: 'POST',
-      body: formData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ktp_image: imageBase64 })
     });
+
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
     const data = await res.json();
     apiResult.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
@@ -131,6 +135,7 @@ uploadBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
 
 
 
