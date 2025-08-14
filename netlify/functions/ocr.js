@@ -1,21 +1,28 @@
 const fetch = require("node-fetch");
+const { randomUUID: nativeRandomUUID } = require("crypto");
 
-// SAFETY NOTE: these are your sandbox creds, hardcoded by request.
+// Fallback UUIDv4 if Node runtime doesn't have crypto.randomUUID
+const randomUUID = nativeRandomUUID || (() =>
+  "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0, v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  })
+);
+
 const VIDA_TOKEN_URL = "https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token";
 const VIDA_CLIENT_ID = "partner-demotest-sso-sandbox";
 const VIDA_CLIENT_SECRET = "pr42jmfddaQnozhwzwW7utDkWi3vAhER";
 
-// This endpoint expects: { "parameters": { "image": "<BASE64>" } }
-const VIDA_OCR_URL = "https://services-sandbox.vida.id/verify/v1/ktp/ocr/transaction";
+const VIDA_VERIFY_SUMMARY_URL = "https://my-services-sandbox.np.vida.id/api/v1/verify/summary";
 
 exports.handler = async (event) => {
   try {
     const { imageBase64 } = JSON.parse(event.body || "{}");
-    if(!imageBase64){
+    if (!imageBase64) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing imageBase64" }) };
     }
 
-    // 1) Get access token
+    // 1) Get OAuth token
     const tokenRes = await fetch(VIDA_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -32,61 +39,72 @@ exports.handler = async (event) => {
     }
     const accessToken = tokenData.access_token;
 
-    // 2) Call VIDA OCR (IMPORTANT: wrap inside "parameters")
-    const ocrRes = await fetch(VIDA_OCR_URL, {
+    // 2) Build verify/summary request
+    const partnerTrxId = `trx_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const groupId = randomUUID();
+    const obtainedAt = String(Math.floor(Date.now() / 1000)); // epoch seconds
+    const userIPHeader = event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"] || "";
+    const userIP = userIPHeader.split(",")[0].trim() || "0.0.0.0";
+
+    const payload = {
+      operations: ["ocr", "idVerification"],
+      payload: {
+        partnerTrxId,
+        groupId,
+        idType: "ID_CARD",
+        country: "IDN",
+        idSubtype: "KTP",
+        idFrontSideImage: imageBase64
+      },
+      userConsent: {
+        userIP,
+        country: "IDN",
+        obtained: true,
+        obtainedAt
+      }
+    };
+
+    const vsRes = await fetch(VIDA_VERIFY_SUMMARY_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
+        Authorization: `Bearer ${accessToken}`
       },
-      body: JSON.stringify({
-        parameters: { image: imageBase64 }
-      })
+      body: JSON.stringify(payload)
     });
 
-    const ocrJson = await ocrRes.json().catch(() => ({}));
-    if(!ocrRes.ok){
-      return { statusCode: ocrRes.status, body: JSON.stringify({ error: "VIDA OCR error", data: ocrJson }) };
+    const vsJson = await vsRes.json().catch(() => ({}));
+    if (!vsRes.ok) {
+      // Surface VIDA error response so you can see what it needs
+      return { statusCode: vsRes.status, body: JSON.stringify({ error: "VIDA verify/summary error", data: vsJson }) };
     }
 
-    // 3) Normalize -> fixed columns
-    // (Adjust keys to match VIDA’s actual response in your account)
-    const get = (obj, pathArr) => {
-      for (const p of pathArr) {
-        const parts = Array.isArray(p) ? p : [p];
-        for (const key of parts) {
-          const v = key.split(".").reduce((a,k) => (a && a[k] != null ? a[k] : undefined), obj);
-          if (v != null && v !== "") return String(v);
-        }
+    // 3) Normalize into fixed columns for the UI table
+    const getPath = (obj, path) =>
+      path.split(".").reduce((acc, k) => (acc && acc[k] != null ? acc[k] : undefined), obj);
+
+    // Try multiple likely paths (since different accounts/versions may shape data slightly differently)
+    const pick = (...paths) => {
+      for (const p of paths) {
+        const v = getPath(vsJson, p);
+        if (v != null && v !== "") return String(v);
       }
       return undefined;
     };
 
-    // Try common KTP field names (fallback to "-")
+    // Common locations to probe (adjust if your account returns different keys)
+    // Often the OCR piece is nested somewhere like:
+    //   data.ocr.result.fields.*, or summary.ocr.*, or result.ocr.*, etc.
     const fields = {
-      nik:            get(ocrJson, ["nik", "data.nik", "result.nik"]) || "-",
-      fullName:       get(ocrJson, ["name", "full_name", "data.name", "result.name"]) || "-",
-      placeOfBirth:   get(ocrJson, ["place_of_birth", "birth_place", "data.place_of_birth"]) || "-",
-      dateOfBirth:    get(ocrJson, ["date_of_birth", "dob", "birth_date", "data.date_of_birth"]) || "-",
-      gender:         get(ocrJson, ["gender", "sex", "data.gender"]) || "-",
-      address:        get(ocrJson, ["address", "alamat", "data.address"]) || "-",
-      rtRw:           get(ocrJson, ["rt_rw", "rtrw", "rtRw", "data.rt_rw"]) || "-",
-      kelDesa:        get(ocrJson, ["village", "kel_desa", "kelurahan", "data.village"]) || "-",
-      kecamatan:      get(ocrJson, ["district", "kecamatan", "data.district"]) || "-",
-      religion:       get(ocrJson, ["religion", "agama", "data.religion"]) || "-",
-      maritalStatus:  get(ocrJson, ["marital_status", "status_perkawinan", "data.marital_status"]) || "-",
-      occupation:     get(ocrJson, ["occupation", "job", "pekerjaan", "data.occupation"]) || "-",
-      nationality:    get(ocrJson, ["nationality", "kewarganegaraan", "data.nationality"]) || "-"
-    };
+      nik:           pick("data.ocr.nik", "data.ocr.result.nik", "summary.ocr.nik", "ocr.nik", "result.ocr.nik") || "-",
+      fullName:      pick("data.ocr.name", "data.ocr.result.name", "summary.ocr.name", "ocr.name", "result.ocr.name", "data.ocr.full_name") || "-",
+      placeOfBirth:  pick("data.ocr.place_of_birth", "data.ocr.result.place_of_birth", "ocr.place_of_birth") || "-",
+      dateOfBirth:   pick("data.ocr.date_of_birth", "data.ocr.result.date_of_birth", "ocr.date_of_birth", "data.ocr.dob") || "-",
+      gender:        pick("data.ocr.gender", "data.ocr.result.gender", "ocr.gender") || "-",
+      address:       pick("data.ocr.address", "data.ocr.result.address", "ocr.address") || "-",
+      rtRw:          pick("data.ocr.rt_rw", "data.ocr.result.rt_rw", "ocr.rt_rw", "data.ocr.rtrw") || "-",
+      kelDesa:       pick(
 
-    // 4) Return normalized fields (and keep raw for debugging if needed)
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ fields })
-    };
-
-  } catch (err) {
-    return { statusCode: 500, body:
 
 
 
