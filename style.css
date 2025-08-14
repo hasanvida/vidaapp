@@ -1,20 +1,16 @@
 body {
   font-family: Arial, sans-serif;
-  padding: 20px;
-  background: #f4f4f4;
+  text-align: center;
+  margin: 20px;
 }
-h1 {
-  color: #2c3e50;
+
+#preview-container {
+  margin-top: 10px;
 }
-button {
-  padding: 10px 20px;
-  margin: 5px;
-  cursor: pointer;
-}
-pre {
-  background: white;
-  padding: 10px;
+
+#preview {
+  max-width: 300px;
   border: 1px solid #ccc;
-  max-height: 400px;
-  overflow-y: auto;
+  margin-top: 10px;
 }
+
