@@ -12,7 +12,6 @@
     margin: 0;
     padding: 0;
   }
-
   header {
     background: #2b7a78;
     color: #fff;
@@ -20,49 +19,52 @@
     text-align: center;
     font-size: 1.5rem;
   }
-
   .container {
     display: flex;
     flex-direction: row;
-    gap: 1rem;
-    padding: 1.5rem;
     height: calc(100vh - 64px);
-    box-sizing: border-box;
   }
-
-  .box {
+  .left, .right {
     flex: 1;
-    background: #fff;
     padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow-y: auto;
+  }
+  .left {
+    background: #def2f1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow-y: auto;
+    justify-content: start;
+    gap: 1rem;
   }
-
-  .left .preview {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 8px;
-    border: 1px solid #3aafa9;
-    margin-top: 1rem;
+  .right {
+    background: #f0f5f9;
+    border-left: 2px solid #2b7a78;
   }
-
   input[type="file"] {
     padding: 0.5rem;
     border: 2px dashed #3aafa9;
     border-radius: 8px;
-    background: #def2f1;
+    background: #fff;
     cursor: pointer;
-    width: 100%;
-    box-sizing: border-box;
   }
-
-  .right pre.result-box {
-    width: 100%;
-    background: #f0f5f9;
+  img.preview {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    border: 1px solid #3aafa9;
+  }
+  button.upload-btn {
+    background: #3aafa9;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  pre.result-box {
+    background: #fff;
     border: 1px solid #2b7a78;
     border-radius: 8px;
     padding: 1rem;
@@ -71,63 +73,47 @@
     max-height: 80%;
     overflow-y: auto;
   }
-
-  h3 {
-    width: 100%;
-    text-align: left;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    color: #2b7a78;
-  }
-
-  @media (max-width: 768px) {
-    .container {
-      flex-direction: column;
-    }
-    .box {
-      height: auto;
-    }
-  }
 </style>
 </head>
 <body>
-<header>Upload Document & View API Result</header>
-<div class="container">
-  <!-- Left box: Upload + preview -->
-  <div class="box left">
-    <input type="file" id="fileInput" accept="image/*">
-    <img id="preview" class="preview" src="" alt="Image preview" style="display:none;">
+  <header>Upload Document & View API Result</header>
+  <div class="container">
+    <div class="left">
+      <input type="file" id="fileInput" accept="image/*">
+      <img id="preview" class="preview" src="" alt="Image preview" style="display:none;">
+      <button class="upload-btn" id="uploadBtn">Upload & Send</button>
+    </div>
+    <div class="right">
+      <h3>API Response:</h3>
+      <pre id="apiResult" class="result-box">{ Result will appear here }</pre>
+    </div>
   </div>
-
-  <!-- Right box: API result -->
-  <div class="box right">
-    <h3>API Response:</h3>
-    <pre id="apiResult" class="result-box">{ Result will appear here }</pre>
-  </div>
-</div>
 
 <script>
 const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
+const uploadBtn = document.getElementById('uploadBtn');
 const apiResult = document.getElementById('apiResult');
 
-fileInput.addEventListener('change', async () => {
+fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
-  if (!file) {
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.src = '';
     preview.style.display = 'none';
-    apiResult.textContent = '{ Result will appear here }';
-    return;
   }
+});
 
-  // Show preview
-  const reader = new FileReader();
-  reader.onload = e => {
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) return alert('Please select a file first.');
 
-  // Send to API
   const formData = new FormData();
   formData.append('file', file);
 
@@ -136,29 +122,16 @@ fileInput.addEventListener('change', async () => {
       method: 'POST',
       body: formData
     });
-
-    if (!res.ok) {
-      apiResult.textContent = `HTTP Error: ${res.status} ${res.statusText}`;
-      return;
-    }
-
-    let data;
-    try {
-      data = await res.json();
-    } catch (jsonErr) {
-      apiResult.textContent = 'Response is not valid JSON:\n' + await res.text();
-      return;
-    }
-
+    const data = await res.json();
     apiResult.textContent = JSON.stringify(data, null, 2);
-
   } catch (err) {
-    apiResult.textContent = 'Failed to fetch. Make sure your backend is running at http://localhost:3001\nError: ' + err.message;
+    apiResult.textContent = 'Error: ' + err.message;
   }
 });
 </script>
 </body>
 </html>
+
 
 
 
