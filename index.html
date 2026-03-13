@@ -2,144 +2,377 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Document Upload & Result</title>
+<title>Identity Verification Demo</title>
+
+<script src="https://web-sdk.vida.id/1.1.0/sdk.js"></script>
+
 <style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background: #f4f7f6;
-    color: #1a1a1a;
-    margin: 0;
-    padding: 0;
-  }
-  header {
-    background: #2b7a78;
-    color: #fff;
-    padding: 1rem;
-    text-align: center;
-    font-size: 1.5rem;
-  }
-  .container {
-    display: flex;
-    flex-direction: row;
-    height: calc(100vh - 64px);
-  }
-  .left, .right {
-    flex: 1;
-    padding: 1.5rem;
-    overflow-y: auto;
-  }
-  .left {
-    background: #def2f1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: start;
-    gap: 1rem;
-  }
-  .right {
-    background: #f0f5f9;
-    border-left: 2px solid #2b7a78;
-  }
-  input[type="file"] {
-    padding: 0.5rem;
-    border: 2px dashed #3aafa9;
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-  }
-  img.preview {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 8px;
-    border: 1px solid #3aafa9;
-  }
-  button.upload-btn {
-    background: #3aafa9;
-    color: #fff;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  pre.result-box {
-    background: #fff;
-    border: 1px solid #2b7a78;
-    border-radius: 8px;
-    padding: 1rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    max-height: 80%;
-    overflow-y: auto;
-  }
+
+:root{
+--primary:#00c37b;
+--secondary:#011627;
+--bg-body:#f4f7f9;
+--card-bg:#ffffff;
+--border:#e2e8f0;
+--text-main:#1e293b;
+--text-muted:#64748b;
+}
+
+body{
+margin:0;
+font-family:Inter,system-ui,Arial;
+background:var(--bg-body);
+color:var(--text-main);
+}
+
+header{
+background:white;
+padding:1rem 2rem;
+display:flex;
+justify-content:space-between;
+align-items:center;
+border-bottom:1px solid var(--border);
+}
+
+.container{
+max-width:1100px;
+margin:auto;
+padding:2rem;
+display:grid;
+grid-template-columns:340px 1fr;
+gap:1.5rem;
+}
+
+.card{
+background:var(--card-bg);
+border:1px solid var(--border);
+border-radius:12px;
+padding:1.5rem;
+}
+
+h3{
+margin-top:0;
+font-size:1rem;
+font-weight:700;
+}
+
+.country-toggle{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px;
+margin-bottom:1rem;
+}
+
+.btn-toggle{
+padding:0.6rem;
+border:1px solid var(--border);
+background:white;
+border-radius:8px;
+cursor:pointer;
+font-weight:600;
+}
+
+.btn-toggle.active{
+border-color:var(--primary);
+background:#f0fff9;
+}
+
+.button-stack{
+display:flex;
+flex-direction:column;
+gap:0.7rem;
+}
+
+button.btn-action{
+padding:0.8rem;
+border:1px solid var(--border);
+border-radius:10px;
+background:white;
+cursor:pointer;
+font-weight:600;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+button.btn-action:hover{
+border-color:var(--primary);
+background:#f0fff9;
+}
+
+#sdk-container{
+height:520px;
+display:none;
+border:1px solid var(--border);
+border-radius:12px;
+margin-bottom:1rem;
+overflow:hidden;
+}
+
+pre{
+background:#0f172a;
+color:#e2e8f0;
+padding:1rem;
+border-radius:10px;
+font-size:13px;
+overflow:auto;
+min-height:150px;
+}
+
+.back-btn{
+margin-bottom:10px;
+display:none;
+padding:6px 12px;
+border-radius:8px;
+border:none;
+background:var(--secondary);
+color:white;
+cursor:pointer;
+}
+
+footer{
+margin-top:2rem;
+padding:1.5rem;
+text-align:center;
+background:white;
+border-top:1px solid var(--border);
+font-size:12px;
+color:var(--text-muted);
+}
+
+@media(max-width:800px){
+.container{
+grid-template-columns:1fr;
+}
+}
+
 </style>
 </head>
+
 <body>
-<header>Upload Document & View API Result</header>
+
+<header>
+<div style="font-weight:700">Identity Verification Demo</div>
+</header>
+
 <div class="container">
-  <div class="left">
-    <input type="file" id="fileInput" accept="image/*">
-    <img id="preview" class="preview" src="" alt="Image preview" style="display:none;">
-    <button class="upload-btn" id="uploadBtn">Upload & Send</button>
-  </div>
-  <div class="right">
-    <h3>API Response:</h3>
-    <pre id="apiResult" class="result-box">{ Result will appear here }</pre>
-  </div>
+
+<div class="card">
+
+<h3>Regional Context</h3>
+
+<div class="country-toggle">
+<button id="btn-id" class="btn-toggle active" onclick="setCountry('ID')">Indonesia</button>
+<button id="btn-my" class="btn-toggle" onclick="setCountry('MY')">Malaysia</button>
 </div>
 
+<h3>Workflows</h3>
+
+<div class="button-stack">
+<button class="btn-action" onclick="startDocumentOnly()">Document Capture</button>
+<button class="btn-action" onclick="startFullVerification()">Verify Identity</button>
+<button class="btn-action" onclick="startLivenessOnly()">Liveness Only</button>
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>Developer Console</h3>
+
+<button class="back-btn" id="backBtn" onclick="goHome()">← Back to Home</button>
+
+<div id="sdk-container"></div>
+
+<pre id="result">// Ready. Select a workflow to begin.</pre>
+
+</div>
+
+</div>
+
+<footer>
+© 2026 Identity Verification Demo
+</footer>
+
 <script>
-const fileInput = document.getElementById('fileInput');
-const preview = document.getElementById('preview');
-const uploadBtn = document.getElementById('uploadBtn');
-const apiResult = document.getElementById('apiResult');
-let imageBase64 = "";
 
-// Show image preview and store base64
-fileInput.addEventListener('change', () => {
-  const file = fileInput.files[0];
-  if (!file) {
-    preview.style.display = 'none';
-    imageBase64 = "";
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = e => {
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    imageBase64 = e.target.result.split(',')[1]; // remove "data:image/..."
-  };
-  reader.readAsDataURL(file);
-});
+let selectedCountry="ID"
 
-// Upload button sends image to Netlify function
-uploadBtn.addEventListener('click', async () => {
-  if (!imageBase64) return alert('Please select a file first.');
+const result=document.getElementById("result")
+const sdkContainer=document.getElementById("sdk-container")
+const backBtn=document.getElementById("backBtn")
 
-  try {
-    const res = await fetch('/.netlify/functions/ocr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ktp_image: imageBase64 })
-    });
+function setCountry(country){
 
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+selectedCountry=country
 
-    const data = await res.json();
-    apiResult.textContent = JSON.stringify(data, null, 2);
-  } catch (err) {
-    apiResult.textContent = 'Error: ' + err.message;
-  }
-});
+document.getElementById("btn-id").classList.toggle("active",country==="ID")
+document.getElementById("btn-my").classList.toggle("active",country==="MY")
+
+result.textContent=`// Switched to ${country}`
+
+}
+
+async function fetchToken(){
+
+try{
+
+const res=await fetch("/.netlify/functions/get-token")
+
+if(!res.ok) throw new Error("Token fetch failed")
+
+return await res.json()
+
+}catch(e){
+
+console.error(e)
+throw e
+
+}
+
+}
+
+function handleOutput(data){
+
+sdkContainer.style.display="none"
+backBtn.style.display="none"
+
+result.style.display="block"
+
+result.textContent=JSON.stringify(data,null,2)
+
+}
+
+function goHome(){
+
+sdkContainer.innerHTML=""
+sdkContainer.style.display="none"
+backBtn.style.display="none"
+
+result.style.display="block"
+result.textContent="// Ready. Select a workflow to begin."
+
+}
+
+function getConfig(isFull){
+
+const isMY=selectedCountry==="MY"
+
+return{
+
+countryCode:isMY?"MYS":"IDN",
+
+workflowConfigs:{
+identityVerification:{
+
+userConsent:{
+obtained:true,
+obtainedAt:Date.now()
+},
+
+docVerification:{
+skipDocSelectionScreen:false,
+skipIntroductionScreen:false
+},
+
+...(isFull?{faceMatch:{}}:{skipFaceMatch:true}),
+
+...(isMY?{documentType:["MyKad","MyPR","MyTentera","PASSPORT"]}:{})
+}
+
+}
+
+}
+
+}
+
+async function start(isFull){
+
+result.textContent="// Fetching session token..."
+
+try{
+
+const t=await fetchToken()
+
+result.style.display="none"
+
+sdkContainer.style.display="block"
+backBtn.style.display="inline-block"
+
+const sdkParams={
+
+token:t.access_token,
+signingKey:t.signing_key || t.signingKey,
+
+workflow:"identity-verification",
+
+elementId:"sdk-container",
+
+locale:"EN",
+
+...getConfig(isFull),
+
+onComplete:handleOutput,
+onError:handleOutput
+
+}
+
+console.log("SDK INIT",sdkParams)
+
+VidaSDK.init(sdkParams)
+
+}catch(e){
+
+result.textContent="// Error: "+e.message
+
+}
+
+}
+
+function startDocumentOnly(){
+start(false)
+}
+
+function startFullVerification(){
+start(true)
+}
+
+async function startLivenessOnly(){
+
+result.style.display="none"
+
+sdkContainer.style.display="block"
+backBtn.style.display="inline-block"
+
+try{
+
+const t=await fetchToken()
+
+VidaSDK.init({
+
+token:t.access_token,
+signingKey:t.signing_key || t.signingKey,
+
+workflow:"liveness",
+
+elementId:"sdk-container",
+
+locale:"EN",
+
+onComplete:handleOutput,
+onError:handleOutput
+
+})
+
+}catch(e){
+
+result.textContent="// Error: "+e.message
+
+}
+
+}
+
 </script>
+
 </body>
 </html>
-
-
-
-
-
-
-
-
